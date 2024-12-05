@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# Variables
+ball_x=10
+ball_y=10
+ball_dx=1
+ball_dy=1
+
+paddle1_y=9
+paddle2_y=9
+paddle_height=3
+width=40
+height=20
+
+score1=0
+score2=0
+
+# Draw the game field
+draw() {
+  clear
+  # Draw top and bottom borders
+  for ((i=0; i<=width+1; i++)); do
+    echo -n "-"
+  done
+  echo
+  for ((i=0; i<height; i++)); do
+    echo -n "|"
+    for ((j=0; j<width; j++)); do
+      if ((i == ball_y && j == ball_x)); then
+        echo -n "o"
+      elif ((j == 1 && i >= paddle1_y && i < paddle1_y + paddle_height)); then
+        echo -n "|"
+      elif ((j == width-2 && i >= paddle2_y && i < paddle2_y + paddle_height)); then
+        echo -n "|"
+      else
+        echo -n " "
+      fi
+    done
+    echo "|"
+  done
+  for ((i=0; i<=width+1; i++)); do
+    echo -n "-"
+  done
+  echo
+  echo "Player 1: $score1  Player 2: $score2"
+}
+
+# Move the ball
+move_ball() {
+  ball_x=$((ball_x + ball_dx))
+  ball_y=$((ball_y + ball_dy))
+
+  # Collision with top or bottom walls
+  if ((ball_y <= 0 || ball_y >= height-1)); then
+    ball_dy=$(( -ball_dy ))
+  fi
+
+  # Collision with paddles
+  if ((ball_x == 1 && ball_y >= paddle1_y && ball_y < paddle1_y + paddle_height)); then
+    ball_dx=$(( -ball_dx ))
+  elif ((ball_x == width-2 && ball_y >= paddle2_y && ball_y < paddle2_y + paddle_height)); then
+    ball_dx=$(( -ball_dx ))
+  fi
+
+  # Scoring
+  if ((ball_x <= 0)); then
+    score2=$((score2 + 1))
+    reset_ball
+  elif ((ball_x >= width-1)); then
+    score1=$((score1 + 1))
+    reset_ball
+  fi
+}
+
+# Reset the ball position
+reset_ball() {
+  ball_x=$((width / 2))
+  ball_y=$((height / 2))
+  ball_dx=$(( -ball_dx ))
+  ball_dy=$((RANDOM % 2 == 0 ? 1 : -1))
+}
+
+# Player movement
+move_paddle() {
+  case $1 in
+    w) ((paddle1_y > 0)) && paddle1_y=$((paddle1_y - 1)) ;;
+    s) ((paddle1_y < height - paddle_height)) && paddle1_y=$((paddle1_y + 1)) ;;
+    i) ((paddle2_y > 0)) && paddle2_y=$((paddle2_y - 1)) ;;
+    k) ((paddle2_y < height - paddle_height)) && paddle2_y=$((paddle2_y + 1)) ;;
+  esac
+}
+
+# Main game loop
+game_loop() {
+  while true; do
+    draw
+    move_ball
+    read -t 0.05 -n 1 input
+    move_paddle $input
+  done
+}
+
+# Start the game
+trap "clear; exit" SIGINT
+game_loop
